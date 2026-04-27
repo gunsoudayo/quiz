@@ -1,0 +1,149 @@
+あなたは、このリポジトリで React + Vite + TypeScript のフロント骨組みを実装するコーディングエージェントです。
+
+目的:
+会社のレクリエーション用ブラウザクイズアプリのフロント骨組みを作成してください。
+今回は UI は React の関数コンポーネントで実装し、ロジックは OOP で整理します。
+ただし、今回の作業範囲は「フロント骨組みの作成」に限定します。
+バックエンドの実処理や AWS 接続はまだ本実装しません。
+
+技術前提:
+- React
+- Vite
+- TypeScript
+- react-router-dom
+- 関数コンポーネント
+- ロジックは application / domain / infrastructure に分離
+- presentation は React らしく保つ
+- 状態管理ライブラリは現時点では追加しない
+- CSS フレームワークは現時点では追加しない
+- スタイリングは最小限でよい
+- TypeScript は strict を前提とする
+
+アーキテクチャ前提:
+- presentation(function component / hooks)
+- application(usecases)
+- domain(entities / valueObjects / services / repositories interfaces)
+- infrastructure(repositories / api / realtime / storage / mappers)
+
+依存方向は以下に従ってください:
+presentation -> application -> domain
+infrastructure は domain.repositories を実装する
+presentation から repository を直接呼ばない
+presentation から entity を直接 new しない
+
+今回のディレクトリ構成:
+src/
+  app/
+    router/
+    layouts/
+    config/
+  presentation/
+    pages/
+      join/
+      player/
+      screen/
+      host/
+      not-found/
+    components/
+      common/
+    hooks/
+  application/
+    usecases/
+    dto/
+  domain/
+    entities/
+    valueObjects/
+    services/
+    repositories/
+  infrastructure/
+    api/
+    repositories/
+    realtime/
+    storage/
+    mappers/
+  shared/
+    types/
+    utils/
+    errors/
+
+今回の作業範囲:
+1. Vite + React + TypeScript 前提でフロント骨組みを作る
+2. ルーティングを作る
+3. 以下のページを作る
+   - /join
+   - /player
+   - /screen
+   - /host
+   - NotFound
+4. 共通レイアウトを作る
+5. app/config/routes.ts を作る
+6. LocalStorageService と SessionStorageGateway の骨組みを作る
+7. ApiClient と endpoints の骨組みを作る
+8. 最小限の domain クラスを作る
+   - Room
+   - Question
+   - Session
+   - RoomStatus
+   - QuestionIndex
+   - Choice
+9. モックデータで各ページが表示できる状態にする
+10. まだ AWS 接続や実 API 通信はしない
+11. 未実装部分は TODO コメントで明示する
+
+画面要件:
+- /join
+  - 名前入力
+  - 参加用パスワード入力
+  - 参加ボタン
+- /player
+  - 問題文
+  - 選択肢 A〜D
+  - 回答済み表示エリア
+- /screen
+  - 問題文
+  - 選択肢 A〜D + 票数
+  - 正解表示エリア
+  - ランキング表示エリア
+- /host
+  - 問題番号ボタン群
+  - 正解表示ボタン
+
+重要なドメイン前提:
+- questionIndex = 0 は待機画面
+- room status は waiting / open / result
+- 回答は 1人1票
+- 回答変更不可
+- 正解表示時に採点する
+- ランキングは totalScore の高い順
+- 同点は同順位
+- セッションは player / host を持つ
+
+命名方針:
+- ファイル名は PascalCase または役割に応じた一般的な TypeScript 命名にする
+- UseCase は `XxxUseCase.ts`
+- Entity は `Xxx.ts`
+- ValueObject は `Xxx.ts`
+- Interface は `I...Repository.ts`
+
+実装ルール:
+- いきなり全部を作り込みすぎない
+- 骨組みとして読みやすさを優先する
+- 不要な抽象化は増やしすぎない
+- ただし、後から実装を足しやすい形にする
+- any はなるべく使わない
+- export を整理する
+- import path を破綻させない
+- コンパイルエラーが出ない状態を目指す
+
+出力してほしい内容:
+1. 作成・更新したファイル一覧
+2. 各ファイルのコード
+3. この段階で未実装の TODO 一覧
+4. 次に着手すべき実装順
+
+もし既存ファイルがある場合:
+- 既存構成を尊重しつつ最小差分で実装する
+- 破壊的変更は避ける
+- 既存の命名規則があれば合わせる
+
+まずは「フロント骨組みの最小実装」に集中してください。

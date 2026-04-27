@@ -1,0 +1,529 @@
+クイズアプリ クラス責務一覧
+
+前提
+- UIはReactの関数コンポーネントで実装する
+- ロジックはオブジェクト指向で整理する
+- 業務ルールの最終判定はバックエンドが持つ
+- フロントは画面制御、データ整流、依存隠蔽を主目的とする
+- テーブル構成は rooms / participants / answers / tallies / participantScores / sessions を前提とする
+- 状態遷移は waiting / open / result を前提とする
+- 正解表示時に採点し、同点は同順位とする
+
+==================================================
+1. application/usecases
+==================================================
+
+1-1. JoinParticipantUseCase
+責務:
+- 参加者名と参加用パスワードを受け取る
+- 参加可否を判定する
+- participantId発行を依頼する
+- participants作成を依頼する
+- sessions作成を依頼する
+- 画面側へ返す参加情報を整える
+
+持たない責務:
+- localStorageへの保存
+- UI文言の決定
+
+--------------------------------------------------
+
+1-2. LoginHostUseCase
+責務:
+- 管理用パスワードを検証する
+- 進行者セッションを作成する
+- 進行者用の戻り値を組み立てる
+
+--------------------------------------------------
+
+1-3. ValidateSessionUseCase
+責務:
+- sessionTokenを使ってセッションを検証する
+- 期限切れかを判定する
+- 復帰可能かを判断する
+- lastSeenAt更新を依頼する
+
+--------------------------------------------------
+
+1-4. GetRoomStateUseCase
+責務:
+- 現在のroom状態を取得する
+- 現在問題番号を取得する
+- 必要ならtalliesを取得する
+- 必要ならparticipantScoresを取得する
+- 画面表示用の状態DTOを返す
+
+--------------------------------------------------
+
+1-5. SubmitAnswerUseCase
+責務:
+- セッションを検証する
+- 現在のroomがopenか確認する
+- 回答対象の問題番号が現在問題と一致するか確認する
+- 1人1票ルールを適用する
+- answers保存を依頼する
+- tallies更新を依頼する
+- リアルタイム更新イベント送信を依頼する
+
+持たない責務:
+- 正解判定
+- 得点計算
+
+--------------------------------------------------
+
+1-6. StartQuestionUseCase
+責務:
+- 進行者権限を検証する
+- 問題開始可能か確認する
+- rooms.currentQuestionIndexを更新する
+- rooms.status = openにする
+- 対象問題のtallies初期化を依頼する
+- 問題開始イベント送信を依頼する
+
+--------------------------------------------------
+
+1-7. ShowResultUseCase
+責務:
+- 進行者権限を検証する
+- 現在問題の正解情報を取得する
+- rooms.status = resultに更新する
+- 対象問題の回答一覧を取得する
+- 採点処理を呼ぶ
+- answers.isCorrect / awardedPoints更新を依頼する
+- participantScores更新を依頼する
+- 正解表示イベント送信を依頼する
+
+--------------------------------------------------
+
+1-8. GetRankingUseCase
+責務:
+- participantScoresを取得する
+- ランキングルールを適用する
+- 同点同順位を付与する
+- ランキング表示用DTOを返す
+
+==================================================
+2. domain/entities
+==================================================
+
+2-1. Room
+責務:
+- roomId, currentQuestionIndex, statusを保持する
+- 今の状態がwaiting / open / resultのどれかを判定する
+- 問題開始可能かの基礎判定を行う
+- 結果表示状態かを判定する
+
+主なメソッド例:
+- isWaiting()
+- isOpen()
+- isResult()
+- canAcceptAnswer(questionIndex)
+
+--------------------------------------------------
+
+2-2. Participant
+責務:
+- participantId, participantNameを保持する
+- 参加者として有効な名前かを表現する
+
+--------------------------------------------------
+
+2-3. Question
+責務:
+- questionIndex, text, choices, correctChoice, pointを保持する
+- 待機画面用問題か本問かを判定する
+- 指定選択肢が正解か判定する
+
+主なメソッド例:
+- isWaitingQuestion()
+- isCorrectChoice(choice)
+
+--------------------------------------------------
+
+2-4. Answer
+責務:
+- 誰が何を回答したかを保持する
+- 採点前・採点後の状態を表現する
+- 自身を採点済みに更新する
+
+主なメソッド例:
+- isScored()
+- markScored(isCorrect, awardedPoints)
+
+--------------------------------------------------
+
+2-5. Tally
+責務:
+- A/B/C/Dの票数を保持する
+- 票数を安全に加算する
+- 画面表示向けの集計状態を返す
+
+主なメソッド例:
+- increment(choice)
+- toDisplayModel()
+
+--------------------------------------------------
+
+2-6. ParticipantScore
+責務:
+- 参加者ごとのcorrectCountとtotalScoreを保持する
+- 1問分の採点結果を反映する
+
+主なメソッド例:
+- applyScoringResult(isCorrect, awardedPoints)
+
+--------------------------------------------------
+
+2-7. Session
+責務:
+- sessionToken, role, expiresAtを保持する
+- セッション有効性を判定する
+- 復帰可能なセッションかを表現する
+
+主なメソッド例:
+- isExpired(now)
+- isPlayerSession()
+- isHostSession()
+
+==================================================
+3. domain/valueObjects
+==================================================
+
+3-1. RoomId
+責務:
+- roomId文字列を表現する
+- 空文字や不正形式を防ぐ
+
+--------------------------------------------------
+
+3-2. ParticipantId
+責務:
+- participantIdを表現する
+- 文字列のまま各所に散らさない
+
+--------------------------------------------------
+
+3-3. SessionToken
+責務:
+- sessionTokenを表現する
+- 空値や不正な扱いを防ぐ
+
+--------------------------------------------------
+
+3-4. QuestionIndex
+責務:
+- 問題番号を表現する
+- 0以上であることを担保する
+- 待機画面0を明示的に扱えるようにする
+
+--------------------------------------------------
+
+3-5. Choice
+責務:
+- A/B/C/Dのみを許可する
+- 無効な選択肢を防ぐ
+
+--------------------------------------------------
+
+3-6. RoomStatus
+責務:
+- waiting / open / resultを表現する
+- 不正な状態文字列を防ぐ
+
+--------------------------------------------------
+
+3-7. Score
+責務:
+- 点数を表現する
+- 負の値や不正な数値を防ぐ
+
+==================================================
+4. domain/services
+==================================================
+
+4-1. AnswerPolicy
+責務:
+- 回答可能かを判定する
+- 1人1票ルールを適用する
+- 回答変更不可ルールを適用する
+- 現在状態と回答履歴から回答受付可否を返す
+
+主なメソッド例:
+- canSubmit(room, questionIndex, existingAnswer)
+
+--------------------------------------------------
+
+4-2. ScoringService
+責務:
+- Question.correctChoiceとAnswer.selectedChoiceから正誤判定する
+- 正答時のawardedPointsを算出する
+- 採点結果オブジェクトを返す
+
+主なメソッド例:
+- score(question, answer)
+
+--------------------------------------------------
+
+4-3. RankingService
+責務:
+- ParticipantScore一覧を順位付けする
+- totalScore降順で並べる
+- 同点同順位ルールを適用する
+- 表示用のrankを付与する
+
+主なメソッド例:
+- buildRanking(scores)
+
+--------------------------------------------------
+
+4-4. SessionPolicy
+責務:
+- 自動復帰可否を判定する
+- roleごとのセッション要件を判定する
+- 再認証が必要かを返す
+
+==================================================
+5. domain/repositories
+==================================================
+
+5-1. IRoomRepository
+責務:
+- roomの取得
+- roomの更新
+- currentQuestionIndex / statusの反映
+
+主な操作:
+- findById(roomId)
+- save(room)
+
+--------------------------------------------------
+
+5-2. IParticipantRepository
+責務:
+- participantの作成
+- participant一覧取得
+- participant単体取得
+
+--------------------------------------------------
+
+5-3. IQuestionRepository
+責務:
+- 問題JSONから問題を取得する
+- 問題番号で問題を返す
+- 全問題一覧を返す
+
+--------------------------------------------------
+
+5-4. IAnswerRepository
+責務:
+- 回答の保存
+- 回答済み判定用取得
+- 問題単位の回答一覧取得
+- 採点結果更新
+
+--------------------------------------------------
+
+5-5. ITallyRepository
+責務:
+- tally初期化
+- tally加算
+- tally取得
+
+--------------------------------------------------
+
+5-6. IParticipantScoreRepository
+責務:
+- participant scoreの取得
+- participant scoreの更新
+- ランキング元データの取得
+
+--------------------------------------------------
+
+5-7. ISessionRepository
+責務:
+- sessionの作成
+- sessionの取得
+- sessionの有効期限確認用データ取得
+- lastSeenAt更新
+
+--------------------------------------------------
+
+5-8. IRealtimeEventRepository
+責務:
+- AppSync Eventsへのイベント送信を抽象化する
+- 問題開始、票数更新、結果表示、ランキング通知を送る
+
+==================================================
+6. infrastructure/repositories
+==================================================
+
+6-1. RoomRepository
+責務:
+- IRoomRepositoryのDynamoDB実装
+- roomsテーブルのitemをRoomに変換する
+
+--------------------------------------------------
+
+6-2. ParticipantRepository
+責務:
+- participantsテーブルへの保存・取得
+
+--------------------------------------------------
+
+6-3. QuestionRepository
+責務:
+- S3上のJSONを取得する
+- JSONをQuestionエンティティへ変換する
+
+--------------------------------------------------
+
+6-4. AnswerRepository
+責務:
+- answersテーブルの保存・取得
+- 条件付き書き込みで二重回答防止を補助する
+
+--------------------------------------------------
+
+6-5. TallyRepository
+責務:
+- talliesテーブルの初期化・更新・取得
+
+--------------------------------------------------
+
+6-6. ParticipantScoreRepository
+責務:
+- participantScoresテーブルの保存・取得
+
+--------------------------------------------------
+
+6-7. SessionRepository
+責務:
+- sessionsテーブルの保存・取得・更新
+
+==================================================
+7. infrastructure/realtime
+==================================================
+
+7-1. AppSyncEventsClient
+責務:
+- AppSync Eventsへのpublishを行う
+- 通信詳細を隠蔽する
+
+--------------------------------------------------
+
+7-2. RoomEventSubscriber
+責務:
+- フロント側でイベント購読を行う
+- イベント種類ごとにアプリ状態更新へ橋渡しする
+
+==================================================
+8. infrastructure/storage
+==================================================
+
+8-1. LocalStorageService
+責務:
+- roomId, participantId, participantName, sessionTokenなどを保存する
+- 保存形式を統一する
+- 取得・削除を管理する
+
+--------------------------------------------------
+
+8-2. SessionStorageGateway
+責務:
+- セッション関連データの読み書きを用途単位でまとめる
+- LocalStorageServiceを直接画面側に触らせすぎない
+
+==================================================
+9. infrastructure/api
+==================================================
+
+9-1. ApiClient
+責務:
+- HTTP通信の共通化
+- ヘッダー付与
+- エラーハンドリングの共通化
+
+--------------------------------------------------
+
+9-2. Endpoints
+責務:
+- APIパス定義の一元管理
+
+==================================================
+10. infrastructure/mappers
+==================================================
+
+10-1. RoomMapper
+責務:
+- API/DynamoDBの生データをRoomに変換する
+- Roomを保存形式へ変換する
+
+--------------------------------------------------
+
+10-2. QuestionMapper
+責務:
+- S3 JSONをQuestionに変換する
+
+--------------------------------------------------
+
+10-3. AnswerMapper
+責務:
+- answersテーブル形式とAnswerを相互変換する
+
+--------------------------------------------------
+
+10-4. ParticipantScoreMapper
+責務:
+- participantScores itemとParticipantScoreを相互変換する
+
+--------------------------------------------------
+
+10-5. SessionMapper
+責務:
+- sessions itemとSessionを相互変換する
+
+==================================================
+11. 実装優先度
+==================================================
+
+最優先:
+- JoinParticipantUseCase
+- LoginHostUseCase
+- ValidateSessionUseCase
+- GetRoomStateUseCase
+- SubmitAnswerUseCase
+- StartQuestionUseCase
+- ShowResultUseCase
+- GetRankingUseCase
+- Room
+- Question
+- Answer
+- ParticipantScore
+- Session
+- AnswerPolicy
+- ScoringService
+- RankingService
+- IRoomRepository
+- IQuestionRepository
+- IAnswerRepository
+- ITallyRepository
+- IParticipantScoreRepository
+- ISessionRepository
+- IRealtimeEventRepository
+- ApiClient
+- LocalStorageService
+- RoomRepository
+- QuestionRepository
+- AnswerRepository
+- TallyRepository
+- ParticipantScoreRepository
+- SessionRepository
+- AppSyncEventsClient
+
+2段階目:
+- Participant
+- Tally
+- SessionPolicy
+- SessionStorageGateway
+- Mapper群の細分化
+- RoomEventSubscriberの高機能化

@@ -1,0 +1,211 @@
+クイズアプリ テーブル定義
+
+1. rooms
+用途:
+- 部屋の現在状態を保持する
+- 現在表示中の問題番号を保持する
+
+主キー:
+- PK: roomId
+
+項目:
+- roomId
+- eventId
+- currentQuestionIndex
+- status
+  - waiting
+  - open
+  - result
+- updatedAt
+
+サンプル:
+{
+  "roomId": "room-001",
+  "eventId": "recreation-2026-04",
+  "currentQuestionIndex": 0,
+  "status": "waiting",
+  "updatedAt": "2026-04-21T12:00:00Z"
+}
+
+--------------------------------------------------
+
+2. participants
+用途:
+- 部屋に参加している参加者一覧を保持する
+- 参加者識別を行う
+
+主キー:
+- PK: roomId
+- SK: participantId
+
+項目:
+- roomId
+- participantId
+- participantName
+- joinedAt
+
+サンプル:
+{
+  "roomId": "room-001",
+  "participantId": "p_7f3a1c2d",
+  "participantName": "田中",
+  "joinedAt": "2026-04-21T12:01:00Z"
+}
+
+--------------------------------------------------
+
+3. answers
+用途:
+- 誰がどの問題に何を回答したかを保持する
+- 1人1票チェックを行う
+- 採点結果を保持する
+
+主キー:
+- PK: roomQuestionKey
+- SK: participantId
+
+roomQuestionKey 形式:
+- ROOM#<roomId>#QUESTION#<questionIndex>
+
+項目:
+- roomQuestionKey
+- roomId
+- questionIndex
+- participantId
+- participantName
+- selectedChoice
+- answeredAt
+- isCorrect
+- awardedPoints
+
+サンプル:
+{
+  "roomQuestionKey": "ROOM#room-001#QUESTION#1",
+  "roomId": "room-001",
+  "questionIndex": 1,
+  "participantId": "p_7f3a1c2d",
+  "participantName": "田中",
+  "selectedChoice": "A",
+  "answeredAt": "2026-04-21T12:05:10Z",
+  "isCorrect": true,
+  "awardedPoints": 10
+}
+
+補足:
+- roomId × questionIndex × participantId を一意にする
+- 回答時点では isCorrect と awardedPoints は未確定でもよい
+- 正解表示時に採点して更新する
+
+--------------------------------------------------
+
+4. tallies
+用途:
+- 問題ごとの票数を保持する
+- 全体画面表示用のリアルタイム集計値を保持する
+
+主キー:
+- PK: roomId
+- SK: questionIndex
+
+項目:
+- roomId
+- questionIndex
+- countA
+- countB
+- countC
+- countD
+- updatedAt
+
+サンプル:
+{
+  "roomId": "room-001",
+  "questionIndex": 1,
+  "countA": 12,
+  "countB": 3,
+  "countC": 2,
+  "countD": 1,
+  "updatedAt": "2026-04-21T12:05:15Z"
+}
+
+--------------------------------------------------
+
+5. participantScores
+用途:
+- 最終ランキング用のスコアを保持する
+- 参加者ごとの正答数・合計得点を保持する
+
+主キー:
+- PK: roomId
+- SK: participantId
+
+項目:
+- roomId
+- participantId
+- participantName
+- correctCount
+- totalScore
+- updatedAt
+
+サンプル:
+{
+  "roomId": "room-001",
+  "participantId": "p_7f3a1c2d",
+  "participantName": "田中",
+  "correctCount": 3,
+  "totalScore": 35,
+  "updatedAt": "2026-04-21T12:20:00Z"
+}
+
+補足:
+- ランキングは totalScore の高い順
+- 同点は同順位
+
+--------------------------------------------------
+
+6. sessions
+用途:
+- ログイン後の簡易セッション管理を行う
+- 同一端末・同一ブラウザでの自動復帰に利用する
+
+主キー:
+- PK: sessionToken
+
+項目:
+- sessionToken
+- roomId
+- participantId
+- participantName
+- role
+  - player
+  - host
+- expiresAt
+- createdAt
+- lastSeenAt
+
+サンプル（参加者）:
+{
+  "sessionToken": "sess_xxxxx",
+  "roomId": "room-001",
+  "participantId": "p_7f3a1c2d",
+  "participantName": "田中",
+  "role": "player",
+  "expiresAt": "2026-04-21T23:59:59Z",
+  "createdAt": "2026-04-21T12:00:00Z",
+  "lastSeenAt": "2026-04-21T12:05:00Z"
+}
+
+サンプル（進行者）:
+{
+  "sessionToken": "sess_host_xxxxx",
+  "roomId": "room-001",
+  "role": "host",
+  "expiresAt": "2026-04-21T20:00:00Z",
+  "createdAt": "2026-04-21T12:00:00Z",
+  "lastSeenAt": "2026-04-21T12:10:00Z"
+}
+
+補足:
+- 参加者セッション有効時間: 12時間
+- 進行者セッション有効時間: 8時間
+- 同じ端末・同じブラウザでの復帰のみ対応する
+- 端末変更・ブラウザ変更時の復帰はMVP対象外

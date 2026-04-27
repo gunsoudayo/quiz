@@ -1,0 +1,301 @@
+:root {
+  color: #17201b;
+  background: #f7f8f4;
+  font-family:
+    "Noto Sans JP",
+    "Yu Gothic",
+    "Hiragino Kaku Gothic ProN",
+    system-ui,
+    sans-serif;
+  font-synthesis: none;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #dce2d7;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  padding: 20px clamp(16px, 4vw, 48px);
+}
+
+.app-header h1,
+.page-heading h2,
+.question-panel h3,
+.result-panel h3,
+.ranking-panel h3,
+.host-controls h3 {
+  margin: 0;
+}
+
+.app-eyebrow,
+.page-kicker {
+  color: #43745f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin: 0 0 4px;
+  text-transform: uppercase;
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.app-nav__link {
+  border: 1px solid #cdd8c6;
+  border-radius: 8px;
+  color: #26332c;
+  padding: 8px 12px;
+  text-decoration: none;
+}
+
+.app-nav__link--active {
+  background: #285a43;
+  border-color: #285a43;
+  color: #ffffff;
+}
+
+.app-main {
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 32px clamp(16px, 4vw, 48px) 56px;
+}
+
+.page-stack {
+  display: grid;
+  gap: 24px;
+}
+
+.page-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.page-heading p {
+  margin: 0;
+}
+
+.form-panel,
+.question-panel,
+.result-panel,
+.ranking-panel,
+.host-controls {
+  background: #ffffff;
+  border: 1px solid #dce2d7;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.form-panel {
+  display: grid;
+  gap: 16px;
+  max-width: 480px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  font-weight: 700;
+}
+
+.field input {
+  border: 1px solid #b9c7b1;
+  border-radius: 8px;
+  min-height: 44px;
+  padding: 10px 12px;
+}
+
+.primary-button,
+.secondary-button {
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  display: inline-flex;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+}
+
+.primary-button {
+  background: #285a43;
+  color: #ffffff;
+}
+
+.primary-button--link {
+  text-decoration: none;
+  width: fit-content;
+}
+
+.secondary-button {
+  background: #f0b15d;
+  color: #17201b;
+}
+
+.question-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.choice-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.choice-button {
+  align-items: center;
+  background: #f8faf4;
+  border: 1px solid #cdd8c6;
+  border-radius: 8px;
+  color: #17201b;
+  display: grid;
+  gap: 6px;
+  min-height: 88px;
+  padding: 14px;
+  text-align: left;
+}
+
+.choice-button strong {
+  color: #b85d4b;
+  font-size: 1.35rem;
+}
+
+.choice-button--selected {
+  background: #285a43;
+  color: #ffffff;
+}
+
+.choice-button--selected strong {
+  color: #ffffff;
+}
+
+.status-line {
+  color: #5a665e;
+  margin: 0;
+}
+
+.screen-layout {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+}
+
+.screen-layout__heading,
+.screen-layout__question {
+  grid-column: 1 / -1;
+}
+
+.screen-title-row {
+  align-items: start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.tally-list,
+.ranking-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.tally-row,
+.ranking-row {
+  align-items: center;
+  background: #f8faf4;
+  border: 1px solid #dce2d7;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+}
+
+.tally-row {
+  grid-template-columns: 40px 1fr auto;
+}
+
+.tally-row__choice {
+  color: #b85d4b;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.ranking-row {
+  grid-template-columns: 56px 1fr auto auto;
+}
+
+.host-controls {
+  display: grid;
+  gap: 20px;
+}
+
+.host-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .app-nav {
+    justify-content: flex-start;
+  }
+
+  .choice-grid,
+  .screen-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .screen-title-row {
+    display: grid;
+  }
+
+  .ranking-row {
+    grid-template-columns: 48px 1fr;
+  }
+}

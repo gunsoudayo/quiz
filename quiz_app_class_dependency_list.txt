@@ -1,0 +1,528 @@
+クイズアプリ クラス図に近い依存関係一覧
+
+前提
+- presentationはReactの関数コンポーネントとhooksで構成する
+- applicationはUseCaseクラスで構成する
+- domainはEntity / ValueObject / DomainService / Repository Interfaceで構成する
+- infrastructureはRepository実装、API通信、S3取得、DynamoDB取得、AppSync Events、localStorageを扱う
+- 業務ルールの最終判定はバックエンドが持つ
+- フロントは画面制御、整流、依存隠蔽を主目的とする
+
+==================================================
+1. 全体の依存方向
+==================================================
+
+presentation(function component / hook)
+    ↓
+application(usecase)
+    ↓
+domain(entity / service / repository interface)
+    ↑
+infrastructure(repository impl / api / storage / realtime)
+
+原則:
+- presentationはdomainを直接触らない
+- presentationはapplicationを経由して業務処理を行う
+- applicationはdomainの型とrepository interfaceに依存する
+- infrastructureはdomain.repositoriesを実装する
+- domainは外側の層を知らない
+
+==================================================
+2. presentation → application
+==================================================
+
+2-1. JoinPage / useJoin
+依存先:
+- JoinParticipantUseCase
+- ValidateSessionUseCase
+- SessionStorageGateway
+
+目的:
+- 参加者ログイン
+- 自動復帰判定
+- 成功時の保存処理
+
+--------------------------------------------------
+
+2-2. PlayerPage / useAnswer / useRoomState
+依存先:
+- ValidateSessionUseCase
+- GetRoomStateUseCase
+- SubmitAnswerUseCase
+- SessionStorageGateway
+- RoomEventSubscriber
+
+目的:
+- 現在問題表示
+- 回答送信
+- リアルタイム更新反映
+- 回答済み状態表示
+- 復帰時状態再構成
+
+--------------------------------------------------
+
+2-3. ScreenPage / useRealtimeSubscription / useRoomState
+依存先:
+- GetRoomStateUseCase
+- GetRankingUseCase
+- RoomEventSubscriber
+
+目的:
+- 全体画面表示
+- 票数更新反映
+- 結果表示
+- ランキング表示
+
+--------------------------------------------------
+
+2-4. HostPage / useHostControl
+依存先:
+- LoginHostUseCase
+- ValidateSessionUseCase
+- StartQuestionUseCase
+- ShowResultUseCase
+- GetRankingUseCase
+- SessionStorageGateway
+
+目的:
+- 進行者ログイン
+- 問題開始
+- 正解表示
+- ランキング確認
+
+==================================================
+3. application → domain / repositories
+==================================================
+
+3-1. JoinParticipantUseCase
+依存先:
+- ISessionRepository
+- IParticipantRepository
+- Session
+- Participant
+- ParticipantId
+- RoomId
+
+補足:
+- パスワード検証はバックエンド正本
+- フロント側では成功レスポンスの整流を主に扱う
+
+--------------------------------------------------
+
+3-2. LoginHostUseCase
+依存先:
+- ISessionRepository
+- Session
+- SessionToken
+- RoomId
+
+--------------------------------------------------
+
+3-3. ValidateSessionUseCase
+依存先:
+- ISessionRepository
+- Session
+- SessionPolicy
+- SessionToken
+
+--------------------------------------------------
+
+3-4. GetRoomStateUseCase
+依存先:
+- IRoomRepository
+- ITallyRepository
+- IParticipantScoreRepository
+- Room
+- Tally
+- ParticipantScore
+
+--------------------------------------------------
+
+3-5. SubmitAnswerUseCase
+依存先:
+- ISessionRepository
+- IRoomRepository
+- IAnswerRepository
+- ITallyRepository
+- IRealtimeEventRepository
+- AnswerPolicy
+- Answer
+- Room
+- Choice
+- QuestionIndex
+
+処理フロー:
+- session取得
+- room取得
+- existing answer取得
+- AnswerPolicyで回答可否判定
+- answer保存
+- tally更新
+- realtime event送信
+
+--------------------------------------------------
+
+3-6. StartQuestionUseCase
+依存先:
+- ISessionRepository
+- IRoomRepository
+- ITallyRepository
+- IRealtimeEventRepository
+- Room
+- QuestionIndex
+
+処理フロー:
+- host session確認
+- room取得
+- room更新
+- tally初期化
+- realtime event送信
+
+--------------------------------------------------
+
+3-7. ShowResultUseCase
+依存先:
+- ISessionRepository
+- IRoomRepository
+- IQuestionRepository
+- IAnswerRepository
+- IParticipantScoreRepository
+- IRealtimeEventRepository
+- ScoringService
+- Question
+- Answer
+- ParticipantScore
+
+処理フロー:
+- host session確認
+- room取得
+- question取得
+- answers取得
+- ScoringServiceで採点
+- answers更新
+- participantScores更新
+- room更新
+- realtime event送信
+
+--------------------------------------------------
+
+3-8. GetRankingUseCase
+依存先:
+- IParticipantScoreRepository
+- RankingService
+- ParticipantScore
+
+処理フロー:
+- scores取得
+- RankingServiceで順位付け
+- 表示DTOへ変換
+
+==================================================
+4. domain内の依存
+==================================================
+
+4-1. Entity → ValueObject
+関係:
+- Room は RoomId, QuestionIndex, RoomStatus に依存
+- Participant は ParticipantId に依存
+- Question は QuestionIndex, Choice, Score に依存
+- Answer は ParticipantId, QuestionIndex, Choice, Score に依存
+- Tally は Choice に依存
+- ParticipantScore は ParticipantId, Score に依存
+- Session は SessionToken, RoomId に依存
+
+--------------------------------------------------
+
+4-2. DomainService → Entity / ValueObject
+関係:
+- AnswerPolicy は Room, Answer, QuestionIndex に依存
+- ScoringService は Question, Answer, Score に依存
+- RankingService は ParticipantScore, Score に依存
+- SessionPolicy は Session に依存
+
+--------------------------------------------------
+
+4-3. UseCase → DomainService
+関係:
+- SubmitAnswerUseCase → AnswerPolicy
+- ShowResultUseCase → ScoringService
+- GetRankingUseCase → RankingService
+- ValidateSessionUseCase → SessionPolicy
+
+==================================================
+5. infrastructure → domain.repositories 実装関係
+==================================================
+
+5-1. RoomRepository
+implements:
+- IRoomRepository
+
+内部依存:
+- ApiClient
+- RoomMapper
+
+データソース:
+- Lambda API / DynamoDB連携API
+
+--------------------------------------------------
+
+5-2. ParticipantRepository
+implements:
+- IParticipantRepository
+
+内部依存:
+- ApiClient
+
+データソース:
+- Lambda API / DynamoDB連携API
+
+--------------------------------------------------
+
+5-3. QuestionRepository
+implements:
+- IQuestionRepository
+
+内部依存:
+- ApiClient またはS3取得クライアント
+- QuestionMapper
+
+データソース:
+- S3上の問題JSON
+
+--------------------------------------------------
+
+5-4. AnswerRepository
+implements:
+- IAnswerRepository
+
+内部依存:
+- ApiClient
+- AnswerMapper
+
+データソース:
+- Lambda API / answersテーブル
+
+--------------------------------------------------
+
+5-5. TallyRepository
+implements:
+- ITallyRepository
+
+内部依存:
+- ApiClient
+
+データソース:
+- Lambda API / talliesテーブル
+
+--------------------------------------------------
+
+5-6. ParticipantScoreRepository
+implements:
+- IParticipantScoreRepository
+
+内部依存:
+- ApiClient
+- ParticipantScoreMapper
+
+データソース:
+- Lambda API / participantScoresテーブル
+
+--------------------------------------------------
+
+5-7. SessionRepository
+implements:
+- ISessionRepository
+
+内部依存:
+- ApiClient
+- SessionMapper
+
+データソース:
+- Lambda API / sessionsテーブル
+
+--------------------------------------------------
+
+5-8. AppSyncRealtimeEventRepository
+implements:
+- IRealtimeEventRepository
+
+内部依存:
+- AppSyncEventsClient
+
+データソース:
+- AppSync Events
+
+==================================================
+6. infrastructure/api / storage / realtime の依存
+==================================================
+
+6-1. ApiClient
+依存先:
+- Endpoints
+- 必要なら認証ヘッダ生成処理
+
+責務:
+- HTTP GET / POST / PUT / DELETEの共通処理
+- エラー整流
+- レスポンス共通処理
+
+--------------------------------------------------
+
+6-2. SessionStorageGateway
+依存先:
+- LocalStorageService
+
+責務:
+- participant session情報をまとめて保存する
+- host session情報をまとめて保存する
+- 復帰判定に必要な値を一括取得する
+- 画面からlocalStorage keyの詳細を隠す
+
+--------------------------------------------------
+
+6-3. RoomEventSubscriber
+依存先:
+- AppSyncEventsClient
+
+責務:
+- QUESTION_STARTED購読
+- TALLY_UPDATED購読
+- RESULT_SHOWN購読
+- RANKING_UPDATED購読
+- presentation層へ通知
+
+==================================================
+7. mapper依存
+==================================================
+
+7-1. RoomMapper
+変換:
+- Room API DTO <-> Room Entity
+
+--------------------------------------------------
+
+7-2. QuestionMapper
+変換:
+- Question JSON DTO <-> Question Entity
+
+--------------------------------------------------
+
+7-3. AnswerMapper
+変換:
+- Answer API DTO <-> Answer Entity
+
+--------------------------------------------------
+
+7-4. ParticipantScoreMapper
+変換:
+- ParticipantScore API DTO <-> ParticipantScore Entity
+
+--------------------------------------------------
+
+7-5. SessionMapper
+変換:
+- Session API DTO <-> Session Entity
+
+==================================================
+8. 代表的な依存チェーン
+==================================================
+
+8-1. 参加者ログイン
+JoinPage
+  -> useJoin
+  -> JoinParticipantUseCase
+  -> IParticipantRepository / ISessionRepository
+  -> ParticipantRepository / SessionRepository
+  -> ApiClient
+  -> backend API
+
+成功後:
+JoinPage
+  -> SessionStorageGateway
+  -> LocalStorageService
+
+--------------------------------------------------
+
+8-2. 回答送信
+PlayerPage
+  -> useAnswer
+  -> SubmitAnswerUseCase
+  -> ISessionRepository
+  -> IRoomRepository
+  -> IAnswerRepository
+  -> ITallyRepository
+  -> IRealtimeEventRepository
+  -> SessionRepository / RoomRepository / AnswerRepository / TallyRepository / AppSyncRealtimeEventRepository
+  -> ApiClient / AppSyncEventsClient
+
+--------------------------------------------------
+
+8-3. 正解表示
+HostPage
+  -> useHostControl
+  -> ShowResultUseCase
+  -> ISessionRepository
+  -> IRoomRepository
+  -> IQuestionRepository
+  -> IAnswerRepository
+  -> IParticipantScoreRepository
+  -> IRealtimeEventRepository
+  -> ScoringService
+  -> SessionRepository / RoomRepository / QuestionRepository / AnswerRepository / ParticipantScoreRepository / AppSyncRealtimeEventRepository
+  -> ApiClient / AppSyncEventsClient
+
+--------------------------------------------------
+
+8-4. ランキング表示
+ScreenPage
+  -> GetRankingUseCase
+  -> IParticipantScoreRepository
+  -> RankingService
+  -> ParticipantScoreRepository
+  -> ApiClient
+
+==================================================
+9. 実装時のルール
+==================================================
+
+- presentation層はrepositoryを直接呼ばない
+- presentation層はentityを直接newしない
+- usecaseはUI stateを持たない
+- repository実装はentityを返す
+- mapperは変換だけに責務を限定する
+- localStorageアクセスはLocalStorageServiceまたはSessionStorageGateway経由に限定する
+- AppSync Eventsのpublish / subscribe詳細はAppSyncEventsClientに閉じ込める
+- 業務ルール判定はif文をpagesに散らさず、domain serviceまたはentityに寄せる
+
+==================================================
+10. 簡易クラス図イメージ
+==================================================
+
+[JoinPage] --> [JoinParticipantUseCase]
+[PlayerPage] --> [SubmitAnswerUseCase]
+[HostPage] --> [StartQuestionUseCase]
+[HostPage] --> [ShowResultUseCase]
+[ScreenPage] --> [GetRankingUseCase]
+
+[SubmitAnswerUseCase] --> [AnswerPolicy]
+[SubmitAnswerUseCase] --> [IRoomRepository]
+[SubmitAnswerUseCase] --> [IAnswerRepository]
+[SubmitAnswerUseCase] --> [ITallyRepository]
+[SubmitAnswerUseCase] --> [IRealtimeEventRepository]
+
+[ShowResultUseCase] --> [ScoringService]
+[ShowResultUseCase] --> [IQuestionRepository]
+[ShowResultUseCase] --> [IAnswerRepository]
+[ShowResultUseCase] --> [IParticipantScoreRepository]
+
+[GetRankingUseCase] --> [RankingService]
+[GetRankingUseCase] --> [IParticipantScoreRepository]
+
+[RoomRepository] --> [ApiClient]
+[AnswerRepository] --> [ApiClient]
+[QuestionRepository] --> [ApiClient or S3 Client]
+[SessionRepository] --> [ApiClient]
+[AppSyncRealtimeEventRepository] --> [AppSyncEventsClient]
+
+[SessionStorageGateway] --> [LocalStorageService]
+[RoomEventSubscriber] --> [AppSyncEventsClient]

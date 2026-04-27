@@ -1,0 +1,27 @@
+{
+  "eventId": "recreation-2026-04",
+  "title": "社内レクリエーションクイズ",
+  "questions": [
+    {
+      "questionIndex": 0,
+      "type": "waiting",
+      "text": "開始までお待ちください",
+      "choices": {},
+      "correctChoice": null,
+      "point": 0
+    },
+    {
+      "questionIndex": 1,
+      "type": "quiz",
+      "text": "日本で一番面積が大きい都道府県は？",
+      "choices": {
+        "A": "北海道",
+        "B": "岩手県",
+        "C": "長野県",
+        "D": "福島県"
+      },
+      "correctChoice": "A",
+      "point": 10
+    }
+  ]
+}
