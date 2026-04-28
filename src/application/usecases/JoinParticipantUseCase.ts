@@ -1,4 +1,8 @@
 import type { ParticipantSessionDto } from "../dto/SessionDto";
+import { Participant } from "../../domain/entities/Participant";
+import { Session } from "../../domain/entities/Session";
+import type { IParticipantRepository } from "../../domain/repositories/IParticipantRepository";
+import type { ISessionRepository } from "../../domain/repositories/ISessionRepository";
 
 export interface JoinParticipantInputDto {
   readonly participantName: string;
@@ -6,18 +10,56 @@ export interface JoinParticipantInputDto {
 }
 
 export class JoinParticipantUseCase {
-  execute(input: JoinParticipantInputDto): ParticipantSessionDto {
-    // TODO: バックエンド API で参加用パスワード検証、participants 作成、sessions 作成を行う。
+  constructor(
+    private readonly participantRepository: IParticipantRepository,
+    private readonly sessionRepository: ISessionRepository,
+    private readonly roomId = "room-001",
+  ) {}
+
+  async execute(input: JoinParticipantInputDto): Promise<ParticipantSessionDto> {
+    // TODO: バックエンド API で参加用パスワード検証を行う。
+    const participantName = input.participantName.trim();
+
+    if (participantName.length === 0) {
+      throw new Error("名前を入力してください。");
+    }
+    if (input.joinPassword.trim().length === 0) {
+      throw new Error("参加用パスワードを入力してください。");
+    }
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 12 * 60 * 60 * 1000);
     const suffix = this.createRandomSuffix();
+    const participantId = `p_${suffix}`;
+    const sessionToken = `sess_${suffix}`;
+
+    await this.participantRepository.save(
+      new Participant({
+        roomId: this.roomId,
+        participantId,
+        participantName,
+        joinedAt: now.toISOString(),
+      }),
+    );
+    await this.sessionRepository.save(
+      new Session({
+        sessionToken,
+        roomId: this.roomId,
+        participantId,
+        participantName,
+        role: "player",
+        expiresAt: expiresAt.toISOString(),
+        createdAt: now.toISOString(),
+        lastSeenAt: now.toISOString(),
+      }),
+    );
 
     return {
-      roomId: "room-001",
-      participantId: `p_${suffix}`,
-      participantName: input.participantName.trim(),
+      roomId: this.roomId,
+      participantId,
+      participantName,
       role: "player",
-      sessionToken: `sess_${suffix}`,
+      sessionToken,
       sessionExpiresAt: expiresAt.toISOString(),
     };
   }

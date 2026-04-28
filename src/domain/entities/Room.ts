@@ -50,4 +50,29 @@ export class Room {
   canAcceptAnswer(questionIndex: QuestionIndex): boolean {
     return this.isOpen() && !questionIndex.isWaiting() && this.props.currentQuestionIndex.equals(questionIndex);
   }
+
+  startQuestion(questionIndex: QuestionIndex, updatedAt: string): Room {
+    if (questionIndex.isWaiting()) {
+      throw new Error("Waiting question cannot be started.");
+    }
+
+    return new Room({
+      ...this.props,
+      currentQuestionIndex: questionIndex,
+      status: RoomStatus.open(),
+      updatedAt,
+    });
+  }
+
+  showResult(updatedAt: string): Room {
+    if (this.props.currentQuestionIndex.isWaiting()) {
+      throw new Error("Cannot show result before starting a question.");
+    }
+
+    return new Room({
+      ...this.props,
+      status: RoomStatus.result(),
+      updatedAt,
+    });
+  }
 }

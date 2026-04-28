@@ -1,20 +1,43 @@
 import type { HostSessionDto } from "../dto/SessionDto";
+import { Session } from "../../domain/entities/Session";
+import type { ISessionRepository } from "../../domain/repositories/ISessionRepository";
 
 export interface LoginHostInputDto {
   readonly adminPassword: string;
 }
 
 export class LoginHostUseCase {
-  execute(_input: LoginHostInputDto): HostSessionDto {
-    // TODO: バックエンド API で管理用パスワード検証、sessions 作成を行う。
+  constructor(
+    private readonly sessionRepository: ISessionRepository,
+    private readonly roomId = "room-001",
+  ) {}
+
+  async execute(input: LoginHostInputDto): Promise<HostSessionDto> {
+    // TODO: バックエンド API で管理用パスワード検証を行う。
+    if (input.adminPassword.trim().length === 0) {
+      throw new Error("管理用パスワードを入力してください。");
+    }
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 8 * 60 * 60 * 1000);
     const suffix = this.createRandomSuffix();
+    const sessionToken = `sess_host_${suffix}`;
+
+    await this.sessionRepository.save(
+      new Session({
+        sessionToken,
+        roomId: this.roomId,
+        role: "host",
+        expiresAt: expiresAt.toISOString(),
+        createdAt: now.toISOString(),
+        lastSeenAt: now.toISOString(),
+      }),
+    );
 
     return {
-      roomId: "room-001",
+      roomId: this.roomId,
       role: "host",
-      sessionToken: `sess_host_${suffix}`,
+      sessionToken,
       sessionExpiresAt: expiresAt.toISOString(),
     };
   }

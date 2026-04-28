@@ -212,6 +212,12 @@ button:disabled {
   margin: 0;
 }
 
+.error-line {
+  color: #b44235;
+  font-weight: 700;
+  margin: 0;
+}
+
 .screen-layout {
   display: grid;
   gap: 20px;

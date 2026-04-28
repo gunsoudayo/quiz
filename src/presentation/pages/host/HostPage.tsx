@@ -1,7 +1,7 @@
 import type { FormEvent, ReactElement } from "react";
 import { useHostControl } from "./useHostControl";
 
-const questionButtons = [1, 2, 3, 4, 5] as const;
+const questionButtons = [1, 2] as const;
 
 export function HostPage(): ReactElement {
   const {

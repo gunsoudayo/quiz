@@ -2,7 +2,7 @@ import type { FormEvent, ReactElement } from "react";
 import { useJoin } from "./useJoin";
 
 export function JoinPage(): ReactElement {
-  const { participantName, joinPassword, setParticipantName, setJoinPassword, join } = useJoin();
+  const { participantName, joinPassword, errorMessage, setParticipantName, setJoinPassword, join } = useJoin();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -41,6 +41,7 @@ export function JoinPage(): ReactElement {
         <button className="primary-button" type="submit">
           参加する
         </button>
+        {errorMessage ? <p className="error-line">{errorMessage}</p> : null}
       </form>
     </section>
   );

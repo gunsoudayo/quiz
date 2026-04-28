@@ -35,4 +35,5 @@ export interface RoomStateDto {
   readonly question: QuestionDto;
   readonly tally: TallyDto;
   readonly ranking: readonly RankingItemDto[];
+  readonly currentParticipantAnswer?: ChoiceValue;
 }

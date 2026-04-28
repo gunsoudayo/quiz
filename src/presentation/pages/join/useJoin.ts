@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { JoinParticipantUseCase } from "../../../application/usecases/JoinParticipantUseCase";
-import { SessionStorageGateway } from "../../../infrastructure/storage/SessionStorageGateway";
+import { appDependencies } from "../../../app/config/dependencies";
 
 export function useJoin(): {
   readonly participantName: string;
   readonly joinPassword: string;
+  readonly errorMessage: string;
   readonly setParticipantName: (value: string) => void;
   readonly setJoinPassword: (value: string) => void;
   readonly join: () => void;
@@ -13,18 +13,26 @@ export function useJoin(): {
   const navigate = useNavigate();
   const [participantName, setParticipantName] = useState("");
   const [joinPassword, setJoinPassword] = useState("");
-  const joinParticipantUseCase = useMemo(() => new JoinParticipantUseCase(), []);
-  const sessionStorageGateway = useMemo(() => new SessionStorageGateway(), []);
+  const [errorMessage, setErrorMessage] = useState("");
+  const { joinParticipantUseCase, sessionStorageGateway } = useMemo(() => appDependencies, []);
 
   const join = (): void => {
-    const session = joinParticipantUseCase.execute({ participantName, joinPassword });
-    sessionStorageGateway.saveParticipantSession(session);
-    navigate("/player");
+    void (async (): Promise<void> => {
+      try {
+        const session = await joinParticipantUseCase.execute({ participantName, joinPassword });
+        sessionStorageGateway.saveParticipantSession(session);
+        setErrorMessage("");
+        navigate("/player");
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : "参加に失敗しました。");
+      }
+    })();
   };
 
   return {
     participantName,
     joinPassword,
+    errorMessage,
     setParticipantName,
     setJoinPassword,
     join,

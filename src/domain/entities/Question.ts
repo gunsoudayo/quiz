@@ -10,7 +10,7 @@ export interface QuestionProps {
   readonly questionIndex: QuestionIndex;
   readonly text: string;
   readonly choices: readonly QuestionChoice[];
-  readonly correctChoice: Choice;
+  readonly correctChoice?: Choice;
   readonly point: number;
 }
 
@@ -40,7 +40,7 @@ export class Question {
     return this.props.choices;
   }
 
-  get correctChoice(): Choice {
+  get correctChoice(): Choice | undefined {
     return this.props.correctChoice;
   }
 
@@ -53,6 +53,6 @@ export class Question {
   }
 
   isCorrectChoice(choice: Choice): boolean {
-    return this.props.correctChoice.equals(choice);
+    return this.props.correctChoice?.equals(choice) ?? false;
   }
 }

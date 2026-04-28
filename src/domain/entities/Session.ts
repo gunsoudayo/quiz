@@ -5,6 +5,8 @@ export interface SessionProps {
   readonly roomId: string;
   readonly role: SessionRole;
   readonly expiresAt: string;
+  readonly createdAt: string;
+  readonly lastSeenAt: string;
   readonly participantId?: string;
   readonly participantName?: string;
 }
@@ -39,6 +41,22 @@ export class Session {
     return this.props.expiresAt;
   }
 
+  get createdAt(): string {
+    return this.props.createdAt;
+  }
+
+  get lastSeenAt(): string {
+    return this.props.lastSeenAt;
+  }
+
+  get participantId(): string | undefined {
+    return this.props.participantId;
+  }
+
+  get participantName(): string | undefined {
+    return this.props.participantName;
+  }
+
   isExpired(now: Date = new Date()): boolean {
     return new Date(this.props.expiresAt).getTime() <= now.getTime();
   }
@@ -49,5 +67,12 @@ export class Session {
 
   isHostSession(): boolean {
     return this.props.role === "host";
+  }
+
+  updateLastSeenAt(lastSeenAt: string): Session {
+    return new Session({
+      ...this.props,
+      lastSeenAt,
+    });
   }
 }
