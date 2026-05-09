@@ -6,6 +6,7 @@ import type { IRoomRepository } from "../../domain/repositories/IRoomRepository"
 import type { ITallyRepository } from "../../domain/repositories/ITallyRepository";
 import { RankingService } from "../../domain/services/RankingService";
 import { Tally } from "../../domain/entities/Tally";
+import type { RoomStateApiResponse } from "../../shared/types/api";
 
 export interface GetRoomStateInputDto {
   readonly roomId?: string;
@@ -24,6 +25,17 @@ export class GetRoomStateUseCase {
 
   async execute(input: GetRoomStateInputDto = {}): Promise<RoomStateDto> {
     const roomId = input.roomId ?? "room-001";
+
+    if (this.roomRepository.findState) {
+      const apiRoomState = await this.roomRepository.findState(roomId, input.participantId);
+
+      if (!apiRoomState) {
+        throw new Error("Room was not found.");
+      }
+
+      return this.toRoomStateDto(apiRoomState);
+    }
+
     const room = await this.roomRepository.findById(roomId);
 
     if (!room) {
@@ -66,6 +78,37 @@ export class GetRoomStateUseCase {
         totalScore: item.totalScore,
       })),
       currentParticipantAnswer: currentParticipantAnswer?.selectedChoice.value,
+    };
+  }
+
+  private toRoomStateDto(response: RoomStateApiResponse): RoomStateDto {
+    return {
+      roomId: response.roomId,
+      currentQuestionIndex: response.currentQuestionIndex,
+      status: response.status,
+      question: {
+        questionIndex: response.question.questionIndex,
+        text: response.question.text,
+        choices: response.question.choices.map((item) => ({
+          key: item.key,
+          label: item.label,
+        })),
+        correctChoice: response.question.correctChoice,
+        point: response.question.point,
+      },
+      tally: {
+        A: response.tally.A,
+        B: response.tally.B,
+        C: response.tally.C,
+        D: response.tally.D,
+      },
+      ranking: response.ranking.map((item) => ({
+        rank: item.rank,
+        participantName: item.participantName,
+        correctCount: item.correctCount,
+        totalScore: item.totalScore,
+      })),
+      currentParticipantAnswer: response.currentParticipantAnswer,
     };
   }
 }

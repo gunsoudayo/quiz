@@ -17,7 +17,10 @@ export interface HostSessionDto {
 }
 
 export interface SessionValidationDto {
-  readonly role: SessionRole;
   readonly isValid: boolean;
-  readonly expiresAt: string;
+  readonly role?: SessionRole;
+  readonly roomId?: string;
+  readonly participantId?: string;
+  readonly participantName?: string;
+  readonly expiresAt?: string;
 }

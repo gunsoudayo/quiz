@@ -1,5 +1,6 @@
 import type { Participant } from "../../domain/entities/Participant";
 import type { IParticipantRepository } from "../../domain/repositories/IParticipantRepository";
+import type { JoinParticipantApiRequest, JoinParticipantApiResponse } from "../../shared/types/api";
 import { ApiClient } from "../api/ApiClient";
 import type {
   GetParticipantResponseDto,
@@ -11,6 +12,10 @@ import { isNotFoundError } from "./api/isNotFoundError";
 
 export class ApiParticipantRepository implements IParticipantRepository {
   constructor(private readonly apiClient: ApiClient) {}
+
+  async joinParticipant(input: JoinParticipantApiRequest): Promise<JoinParticipantApiResponse> {
+    return await this.apiClient.post<JoinParticipantApiResponse>(ENDPOINTS.participants.join, input);
+  }
 
   async findById(roomId: string, participantId: string): Promise<Participant | null> {
     try {

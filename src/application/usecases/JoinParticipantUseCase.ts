@@ -6,7 +6,7 @@ import type { ISessionRepository } from "../../domain/repositories/ISessionRepos
 
 export interface JoinParticipantInputDto {
   readonly participantName: string;
-  readonly joinPassword: string;
+  readonly password: string;
 }
 
 export class JoinParticipantUseCase {
@@ -17,14 +17,21 @@ export class JoinParticipantUseCase {
   ) {}
 
   async execute(input: JoinParticipantInputDto): Promise<ParticipantSessionDto> {
-    // TODO: バックエンド API で参加用パスワード検証を行う。
     const participantName = input.participantName.trim();
 
     if (participantName.length === 0) {
-      throw new Error("名前を入力してください。");
+      throw new Error("Please enter a participant name.");
     }
-    if (input.joinPassword.trim().length === 0) {
-      throw new Error("参加用パスワードを入力してください。");
+    if (input.password.trim().length === 0) {
+      throw new Error("Please enter the join password.");
+    }
+
+    if (this.participantRepository.joinParticipant) {
+      return await this.participantRepository.joinParticipant({
+        roomId: this.roomId,
+        participantName,
+        password: input.password,
+      });
     }
 
     const now = new Date();

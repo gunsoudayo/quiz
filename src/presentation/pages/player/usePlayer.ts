@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { appDependencies } from "../../../app/config/dependencies";
 import type { RoomStateDto } from "../../../application/dto/RoomStateDto";
 import { useRoomState } from "../../hooks/useRoomState";
@@ -16,6 +16,33 @@ export function usePlayer(): {
   const [message, setMessage] = useState("");
   const selectedChoice = roomState.currentParticipantAnswer ?? null;
   const canAnswer = roomState.status === "open" && selectedChoice === null;
+
+  useEffect(() => {
+    const participantSession = appDependencies.sessionStorageGateway.getParticipantSession();
+
+    if (!participantSession) {
+      return;
+    }
+
+    void (async (): Promise<void> => {
+      try {
+        const validation = await appDependencies.validateSessionUseCase.execute({
+          sessionToken: participantSession.sessionToken,
+        });
+
+        if (validation.isValid && validation.role === "player") {
+          return;
+        }
+      } catch {
+        // Treat validation failures as an expired local session.
+      }
+
+      {
+        appDependencies.sessionStorageGateway.clearParticipantSession();
+        setMessage("セッションの有効期限が切れました。参加画面から入り直してください。");
+      }
+    })();
+  }, []);
 
   const submitAnswer = (choice: ChoiceKey): void => {
     const participantSession = appDependencies.sessionStorageGateway.getParticipantSession();

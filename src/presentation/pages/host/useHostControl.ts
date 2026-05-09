@@ -1,17 +1,17 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { appDependencies } from "../../../app/config/dependencies";
 import type { HostSessionDto } from "../../../application/dto/SessionDto";
 
 export function useHostControl(): {
-  readonly adminPassword: string;
+  readonly password: string;
   readonly isLoggedIn: boolean;
   readonly latestAction: string;
-  readonly setAdminPassword: (value: string) => void;
+  readonly setPassword: (value: string) => void;
   readonly login: () => void;
   readonly startQuestion: (questionIndex: number) => void;
   readonly showResult: () => void;
 } {
-  const [adminPassword, setAdminPassword] = useState("");
+  const [password, setPassword] = useState("");
   const [hostSession, setHostSession] = useState<HostSessionDto | null>(() =>
     appDependencies.sessionStorageGateway.getHostSession(),
   );
@@ -21,10 +21,36 @@ export function useHostControl(): {
     [],
   );
 
+  useEffect(() => {
+    const session = hostSession ?? sessionStorageGateway.getHostSession();
+
+    if (!session) {
+      return;
+    }
+
+    void (async (): Promise<void> => {
+      try {
+        const validation = await appDependencies.validateSessionUseCase.execute({
+          sessionToken: session.sessionToken,
+        });
+
+        if (validation.isValid && validation.role === "host") {
+          return;
+        }
+      } catch {
+        // Treat validation failures as an expired local session.
+      }
+
+      sessionStorageGateway.clearHostSession();
+      setHostSession(null);
+      setLatestAction("セッションの有効期限が切れました。再ログインしてください。");
+    })();
+  }, [hostSession, sessionStorageGateway]);
+
   const login = (): void => {
     void (async (): Promise<void> => {
       try {
-        const session = await loginHostUseCase.execute({ adminPassword });
+        const session = await loginHostUseCase.execute({ password });
         sessionStorageGateway.saveHostSession(session);
         setHostSession(session);
         setLatestAction("進行者としてログインしました。");
@@ -66,11 +92,13 @@ export function useHostControl(): {
 
     void (async (): Promise<void> => {
       try {
-        await showResultUseCase.execute({
+        const result = await showResultUseCase.execute({
           sessionToken: session.sessionToken,
           roomId: session.roomId,
         });
-        setLatestAction("正解表示と採点を実行しました。");
+        setLatestAction(
+          result.correctChoice ? `正解 ${result.correctChoice} を表示しました。` : "正解表示と採点を実行しました。",
+        );
       } catch (error) {
         setLatestAction(error instanceof Error ? error.message : "正解表示に失敗しました。");
       }
@@ -78,10 +106,10 @@ export function useHostControl(): {
   };
 
   return {
-    adminPassword,
+    password,
     isLoggedIn: hostSession !== null,
     latestAction,
-    setAdminPassword,
+    setPassword,
     login,
     startQuestion,
     showResult,

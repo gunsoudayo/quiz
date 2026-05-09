@@ -2,7 +2,7 @@ import type { FormEvent, ReactElement } from "react";
 import { useJoin } from "./useJoin";
 
 export function JoinPage(): ReactElement {
-  const { participantName, joinPassword, errorMessage, setParticipantName, setJoinPassword, join } = useJoin();
+  const { participantName, password, errorMessage, setParticipantName, setPassword, join } = useJoin();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
@@ -32,10 +32,10 @@ export function JoinPage(): ReactElement {
           <span>参加用パスワード</span>
           <input
             autoComplete="current-password"
-            onChange={(event) => setJoinPassword(event.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             required
             type="password"
-            value={joinPassword}
+            value={password}
           />
         </label>
         <button className="primary-button" type="submit">

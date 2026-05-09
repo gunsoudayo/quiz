@@ -3,7 +3,7 @@ import { Session } from "../../domain/entities/Session";
 import type { ISessionRepository } from "../../domain/repositories/ISessionRepository";
 
 export interface LoginHostInputDto {
-  readonly adminPassword: string;
+  readonly password: string;
 }
 
 export class LoginHostUseCase {
@@ -13,9 +13,15 @@ export class LoginHostUseCase {
   ) {}
 
   async execute(input: LoginHostInputDto): Promise<HostSessionDto> {
-    // TODO: バックエンド API で管理用パスワード検証を行う。
-    if (input.adminPassword.trim().length === 0) {
-      throw new Error("管理用パスワードを入力してください。");
+    if (input.password.trim().length === 0) {
+      throw new Error("Please enter the admin password.");
+    }
+
+    if (this.sessionRepository.loginHost) {
+      return await this.sessionRepository.loginHost({
+        roomId: this.roomId,
+        password: input.password,
+      });
     }
 
     const now = new Date();

@@ -5,10 +5,10 @@ const questionButtons = [1, 2] as const;
 
 export function HostPage(): ReactElement {
   const {
-    adminPassword,
+    password,
     isLoggedIn,
     latestAction,
-    setAdminPassword,
+    setPassword,
     login,
     startQuestion,
     showResult,
@@ -31,10 +31,10 @@ export function HostPage(): ReactElement {
           <span>管理用パスワード</span>
           <input
             autoComplete="current-password"
-            onChange={(event) => setAdminPassword(event.target.value)}
+            onChange={(event) => setPassword(event.target.value)}
             required
             type="password"
-            value={adminPassword}
+            value={password}
           />
         </label>
         <button className="primary-button" type="submit">

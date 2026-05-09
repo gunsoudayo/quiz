@@ -1,5 +1,7 @@
 import type { ParticipantScore } from "../../domain/entities/ParticipantScore";
+import type { RankingItemDto } from "../../application/dto/RoomStateDto";
 import type { IParticipantScoreRepository } from "../../domain/repositories/IParticipantScoreRepository";
+import type { RankingApiResponse, RoomStateApiRankingItem } from "../../shared/types/api";
 import { ApiClient } from "../api/ApiClient";
 import type {
   GetParticipantScoreResponseDto,
@@ -11,6 +13,18 @@ import { isNotFoundError } from "./api/isNotFoundError";
 
 export class ApiParticipantScoreRepository implements IParticipantScoreRepository {
   constructor(private readonly apiClient: ApiClient) {}
+
+  async listRanking(roomId: string): Promise<readonly RankingItemDto[]> {
+    const response = await this.apiClient.get<RankingApiResponse>(ENDPOINTS.ranking.byRoom(roomId));
+    const ranking: readonly RoomStateApiRankingItem[] = "ranking" in response ? response.ranking : response;
+
+    return ranking.map((item) => ({
+      rank: item.rank,
+      participantName: item.participantName,
+      correctCount: item.correctCount,
+      totalScore: item.totalScore,
+    }));
+  }
 
   async findByParticipant(roomId: string, participantId: string): Promise<ParticipantScore | null> {
     try {

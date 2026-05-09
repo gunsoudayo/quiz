@@ -1,5 +1,11 @@
 import type { Room } from "../../domain/entities/Room";
 import type { IRoomRepository } from "../../domain/repositories/IRoomRepository";
+import type {
+  RoomStateApiResponse,
+  ShowResultApiRequest,
+  ShowResultApiResponse,
+  StartQuestionApiRequest,
+} from "../../shared/types/api";
 import { ApiClient } from "../api/ApiClient";
 import type { GetRoomResponseDto } from "../api/dto/ApiDtos";
 import { ENDPOINTS } from "../api/endpoints";
@@ -20,6 +26,26 @@ export class ApiRoomRepository implements IRoomRepository {
 
       throw error;
     }
+  }
+
+  async findState(roomId: string, participantId?: string): Promise<RoomStateApiResponse | null> {
+    try {
+      return await this.apiClient.get<RoomStateApiResponse>(ENDPOINTS.rooms.state(roomId, participantId));
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  async startQuestion(input: StartQuestionApiRequest): Promise<void> {
+    await this.apiClient.post<void>(ENDPOINTS.rooms.startQuestion, input);
+  }
+
+  async showResult(input: ShowResultApiRequest): Promise<ShowResultApiResponse> {
+    return await this.apiClient.post<ShowResultApiResponse>(ENDPOINTS.rooms.showResult, input);
   }
 
   async save(room: Room): Promise<void> {

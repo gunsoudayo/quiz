@@ -1,7 +1,9 @@
 import type { Answer } from "../../domain/entities/Answer";
 import type { IAnswerRepository } from "../../domain/repositories/IAnswerRepository";
 import type { QuestionIndex } from "../../domain/valueObjects/QuestionIndex";
+import type { SubmitAnswerApiRequest, SubmitAnswerApiResponse } from "../../shared/types/api";
 import { ApiClient } from "../api/ApiClient";
+import { ApiClientError } from "../api/ApiClient";
 import type { GetAnswerResponseDto, ListAnswersResponseDto } from "../api/dto/ApiDtos";
 import { ENDPOINTS } from "../api/endpoints";
 import { AnswerMapper } from "../mappers/AnswerMapper";
@@ -9,6 +11,18 @@ import { isNotFoundError } from "./api/isNotFoundError";
 
 export class ApiAnswerRepository implements IAnswerRepository {
   constructor(private readonly apiClient: ApiClient) {}
+
+  async submitAnswer(input: SubmitAnswerApiRequest): Promise<SubmitAnswerApiResponse> {
+    try {
+      return await this.apiClient.post<SubmitAnswerApiResponse>(ENDPOINTS.answers.submit, input);
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 409) {
+        throw new Error("回答済み、または回答受付中ではありません。");
+      }
+
+      throw error;
+    }
+  }
 
   async findByParticipant(roomId: string, questionIndex: QuestionIndex, participantId: string): Promise<Answer | null> {
     try {

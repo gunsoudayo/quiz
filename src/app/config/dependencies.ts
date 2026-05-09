@@ -5,6 +5,7 @@ import { LoginHostUseCase } from "../../application/usecases/LoginHostUseCase";
 import { ShowResultUseCase } from "../../application/usecases/ShowResultUseCase";
 import { StartQuestionUseCase } from "../../application/usecases/StartQuestionUseCase";
 import { SubmitAnswerUseCase } from "../../application/usecases/SubmitAnswerUseCase";
+import { ValidateSessionUseCase } from "../../application/usecases/ValidateSessionUseCase";
 import type { IAnswerRepository } from "../../domain/repositories/IAnswerRepository";
 import type { IParticipantRepository } from "../../domain/repositories/IParticipantRepository";
 import type { IParticipantScoreRepository } from "../../domain/repositories/IParticipantScoreRepository";
@@ -82,18 +83,68 @@ const createApiRepositories = (): RepositorySet => {
   };
 };
 
-const repositories = appConfig.repositoryMode === "api" ? createApiRepositories() : createMockRepositories();
+const createRepositories = (): RepositorySet => {
+  if (appConfig.repositoryMode === "api") {
+    return createApiRepositories();
+  }
+
+  const repositories = createMockRepositories();
+  const apiClient = createApiClient();
+
+  return {
+    ...repositories,
+    roomRepository:
+      appConfig.roomRepositoryMode === "api" ? new ApiRoomRepository(apiClient) : repositories.roomRepository,
+    participantRepository:
+      appConfig.joinRepositoryMode === "api" ? new ApiParticipantRepository(apiClient) : repositories.participantRepository,
+  };
+};
+
+const repositories = createRepositories();
+const hostLoginSessionRepository =
+  appConfig.repositoryMode === "api" || appConfig.hostLoginRepositoryMode === "api"
+    ? new ApiSessionRepository(createApiClient())
+    : repositories.sessionRepository;
+const startQuestionRoomRepository =
+  appConfig.repositoryMode === "api" || appConfig.startQuestionRepositoryMode === "api"
+    ? new ApiRoomRepository(createApiClient())
+    : repositories.roomRepository;
+const showResultRoomRepository =
+  appConfig.repositoryMode === "api" || appConfig.showResultRepositoryMode === "api"
+    ? new ApiRoomRepository(createApiClient())
+    : repositories.roomRepository;
+const sessionValidationRepository =
+  appConfig.repositoryMode === "api" || appConfig.sessionRepositoryMode === "api"
+    ? new ApiSessionRepository(createApiClient())
+    : repositories.sessionRepository;
+const submitAnswerRepository =
+  appConfig.repositoryMode === "api" || appConfig.submitAnswerRepositoryMode === "api"
+    ? new ApiAnswerRepository(createApiClient())
+    : repositories.answerRepository;
+const rankingParticipantScoreRepository =
+  appConfig.repositoryMode === "api" || appConfig.rankingRepositoryMode === "api"
+    ? new ApiParticipantScoreRepository(createApiClient())
+    : repositories.participantScoreRepository;
 const rankingService = new RankingService();
 const scoringService = new ScoringService();
 
 export const appDependencies = {
   repositoryMode: appConfig.repositoryMode,
+  roomRepositoryMode: appConfig.roomRepositoryMode,
+  joinRepositoryMode: appConfig.joinRepositoryMode,
+  sessionRepositoryMode: appConfig.sessionRepositoryMode,
+  hostLoginRepositoryMode: appConfig.hostLoginRepositoryMode,
+  startQuestionRepositoryMode: appConfig.startQuestionRepositoryMode,
+  submitAnswerRepositoryMode: appConfig.submitAnswerRepositoryMode,
+  showResultRepositoryMode: appConfig.showResultRepositoryMode,
+  rankingRepositoryMode: appConfig.rankingRepositoryMode,
   sessionStorageGateway,
   joinParticipantUseCase: new JoinParticipantUseCase(
     repositories.participantRepository,
     repositories.sessionRepository,
   ),
-  loginHostUseCase: new LoginHostUseCase(repositories.sessionRepository),
+  loginHostUseCase: new LoginHostUseCase(hostLoginSessionRepository),
+  validateSessionUseCase: new ValidateSessionUseCase(sessionValidationRepository),
   getRoomStateUseCase: new GetRoomStateUseCase(
     repositories.roomRepository,
     repositories.questionRepository,
@@ -102,24 +153,24 @@ export const appDependencies = {
     repositories.answerRepository,
     rankingService,
   ),
-  getRankingUseCase: new GetRankingUseCase(repositories.participantScoreRepository, rankingService),
+  getRankingUseCase: new GetRankingUseCase(rankingParticipantScoreRepository, rankingService),
   submitAnswerUseCase: new SubmitAnswerUseCase(
     repositories.sessionRepository,
     repositories.roomRepository,
-    repositories.answerRepository,
+    submitAnswerRepository,
     repositories.tallyRepository,
     repositories.realtimeEventRepository,
   ),
   startQuestionUseCase: new StartQuestionUseCase(
     repositories.sessionRepository,
-    repositories.roomRepository,
+    startQuestionRoomRepository,
     repositories.questionRepository,
     repositories.tallyRepository,
     repositories.realtimeEventRepository,
   ),
   showResultUseCase: new ShowResultUseCase(
     repositories.sessionRepository,
-    repositories.roomRepository,
+    showResultRoomRepository,
     repositories.questionRepository,
     repositories.answerRepository,
     repositories.participantScoreRepository,

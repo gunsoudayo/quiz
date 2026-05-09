@@ -1,5 +1,6 @@
 import type { Session } from "../../domain/entities/Session";
 import type { ISessionRepository } from "../../domain/repositories/ISessionRepository";
+import type { HostLoginApiRequest, HostLoginApiResponse, ValidateSessionApiResponse } from "../../shared/types/api";
 import { ApiClient } from "../api/ApiClient";
 import type { GetSessionResponseDto, UpdateLastSeenAtRequestDto } from "../api/dto/ApiDtos";
 import { ENDPOINTS } from "../api/endpoints";
@@ -8,6 +9,14 @@ import { isNotFoundError } from "./api/isNotFoundError";
 
 export class ApiSessionRepository implements ISessionRepository {
   constructor(private readonly apiClient: ApiClient) {}
+
+  async loginHost(input: HostLoginApiRequest): Promise<HostLoginApiResponse> {
+    return await this.apiClient.post<HostLoginApiResponse>(ENDPOINTS.sessions.hostLogin, input);
+  }
+
+  async validate(sessionToken: string): Promise<ValidateSessionApiResponse> {
+    return await this.apiClient.post<ValidateSessionApiResponse>(ENDPOINTS.sessions.validate, { sessionToken });
+  }
 
   async findByToken(sessionToken: string): Promise<Session | null> {
     try {

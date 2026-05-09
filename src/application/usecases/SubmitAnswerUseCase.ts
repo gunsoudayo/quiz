@@ -31,6 +31,10 @@ export class SubmitAnswerUseCase {
   ) {}
 
   async execute(input: SubmitAnswerInputDto): Promise<SubmitAnswerOutputDto> {
+    if (this.answerRepository.submitAnswer) {
+      return await this.answerRepository.submitAnswer(input);
+    }
+
     const session = await this.sessionRepository.findByToken(input.sessionToken);
 
     if (!session || session.isExpired() || !session.isPlayerSession()) {

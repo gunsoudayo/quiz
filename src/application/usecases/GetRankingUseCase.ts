@@ -13,6 +13,10 @@ export class GetRankingUseCase {
   ) {}
 
   async execute(input: GetRankingInputDto): Promise<readonly RankingItemDto[]> {
+    if (this.participantScoreRepository.listRanking) {
+      return await this.participantScoreRepository.listRanking(input.roomId);
+    }
+
     const scores = await this.participantScoreRepository.listByRoom(input.roomId);
 
     return this.rankingService.buildRanking(scores).map((item) => ({

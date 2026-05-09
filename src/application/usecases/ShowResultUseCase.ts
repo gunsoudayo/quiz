@@ -15,6 +15,12 @@ export interface ShowResultInputDto {
   readonly roomId: string;
 }
 
+export interface ShowResultOutputDto {
+  readonly status: "result";
+  readonly correctChoice?: string;
+  readonly ranking: readonly RankingItemDto[];
+}
+
 export class ShowResultUseCase {
   constructor(
     private readonly sessionRepository: ISessionRepository,
@@ -27,7 +33,25 @@ export class ShowResultUseCase {
     private readonly rankingService: RankingService = new RankingService(),
   ) {}
 
-  async execute(input: ShowResultInputDto): Promise<readonly RankingItemDto[]> {
+  async execute(input: ShowResultInputDto): Promise<ShowResultOutputDto> {
+    if (this.roomRepository.showResult) {
+      const response = await this.roomRepository.showResult(input);
+
+      const ranking =
+        response.ranking?.map((item) => ({
+          rank: item.rank,
+          participantName: item.participantName,
+          correctCount: item.correctCount,
+          totalScore: item.totalScore,
+        })) ?? [];
+
+      return {
+        status: response.status,
+        correctChoice: response.correctChoice,
+        ranking,
+      };
+    }
+
     const session = await this.sessionRepository.findByToken(input.sessionToken);
 
     if (!session || session.isExpired() || !session.isHostSession()) {
@@ -87,11 +111,15 @@ export class ShowResultUseCase {
     await this.realtimeEventRepository.publishRankingUpdated(room.roomId, ranking);
     await this.sessionRepository.updateLastSeenAt(session.sessionToken, now);
 
-    return ranking.map((item) => ({
-      rank: item.rank,
-      participantName: item.participantName,
-      correctCount: item.correctCount,
-      totalScore: item.totalScore,
-    }));
+    return {
+      status: "result",
+      correctChoice: question.correctChoice?.value,
+      ranking: ranking.map((item) => ({
+        rank: item.rank,
+        participantName: item.participantName,
+        correctCount: item.correctCount,
+        totalScore: item.totalScore,
+      })),
+    };
   }
 }

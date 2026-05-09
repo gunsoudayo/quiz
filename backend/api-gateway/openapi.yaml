@@ -1,0 +1,167 @@
+openapi: 3.0.3
+info:
+  title: Quiz API
+  version: 0.1.0
+paths:
+  /api/join:
+    options:
+      responses:
+        "204":
+          description: CORS preflight
+      x-amazon-apigateway-integration:
+        type: mock
+    post:
+      summary: Join as participant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - participantName
+                - password
+              properties:
+                participantName:
+                  type: string
+                password:
+                  type: string
+                roomId:
+                  type: string
+      responses:
+        "200":
+          description: Participant session
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${joinLambdaIntegrationUri}
+  /api/session/validate:
+    options:
+      responses:
+        "204":
+          description: CORS preflight
+      x-amazon-apigateway-integration:
+        type: mock
+    post:
+      summary: Validate session token
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionToken:
+                  type: string
+      responses:
+        "200":
+          description: Session validity
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${validateSessionLambdaIntegrationUri}
+  /api/host/login:
+    options:
+      responses:
+        "204":
+          description: CORS preflight
+      x-amazon-apigateway-integration:
+        type: mock
+    post:
+      summary: Log in as host
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                roomId:
+                  type: string
+      responses:
+        "200":
+          description: Host session
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${hostLoginLambdaIntegrationUri}
+  /api/host/questions/start:
+    options:
+      responses:
+        "204":
+          description: CORS preflight
+      x-amazon-apigateway-integration:
+        type: mock
+    post:
+      summary: Start question
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionToken
+                - roomId
+                - questionIndex
+              properties:
+                sessionToken:
+                  type: string
+                roomId:
+                  type: string
+                questionIndex:
+                  type: integer
+                  minimum: 1
+      responses:
+        "200":
+          description: Started room state
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${startQuestionLambdaIntegrationUri}
+  /api/answers:
+    options:
+      responses:
+        "204":
+          description: CORS preflight
+      x-amazon-apigateway-integration:
+        type: mock
+    post:
+      summary: Submit answer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionToken
+                - questionIndex
+                - selectedChoice
+              properties:
+                sessionToken:
+                  type: string
+                questionIndex:
+                  type: integer
+                  minimum: 1
+                selectedChoice:
+                  type: string
+                  enum: [A, B, C, D]
+      responses:
+        "200":
+          description: Submitted answer and tally
+        "409":
+          description: Duplicate answer or room is not open
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${submitAnswerLambdaIntegrationUri}

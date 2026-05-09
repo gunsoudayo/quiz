@@ -2,20 +2,24 @@ export const ENDPOINTS = {
   rooms: {
     byId: (roomId: string) => `/rooms/${roomId}`,
     save: (roomId: string) => `/rooms/${roomId}`,
-    startQuestion: (roomId: string) => `/rooms/${roomId}/questions/start`,
-    showResult: (roomId: string) => `/rooms/${roomId}/result`,
+    state: (roomId: string, participantId?: string) => {
+      const path = `/api/rooms/${encodeURIComponent(roomId)}/state`;
+      return participantId ? `${path}?participantId=${encodeURIComponent(participantId)}` : path;
+    },
+    startQuestion: "/api/host/questions/start",
+    showResult: "/api/host/questions/show-result",
   },
   questions: {
     list: "/questions",
     byIndex: (questionIndex: number) => `/questions/${questionIndex}`,
   },
   participants: {
-    join: "/participants/join",
+    join: "/api/join",
     byRoom: (roomId: string) => `/rooms/${roomId}/participants`,
     byId: (roomId: string, participantId: string) => `/rooms/${roomId}/participants/${participantId}`,
   },
   answers: {
-    submit: "/answers",
+    submit: "/api/answers",
     byQuestion: (roomId: string, questionIndex: number) =>
       `/rooms/${roomId}/questions/${questionIndex}/answers`,
     byParticipant: (roomId: string, questionIndex: number, participantId: string) =>
@@ -28,7 +32,7 @@ export const ENDPOINTS = {
       `/rooms/${roomId}/questions/${questionIndex}/tallies/increment`,
   },
   ranking: {
-    byRoom: (roomId: string) => `/rooms/${roomId}/ranking`,
+    byRoom: (roomId: string) => `/api/ranking/${encodeURIComponent(roomId)}`,
   },
   participantScores: {
     byRoom: (roomId: string) => `/rooms/${roomId}/participant-scores`,
@@ -39,7 +43,7 @@ export const ENDPOINTS = {
     create: "/sessions",
     byToken: (sessionToken: string) => `/sessions/${sessionToken}`,
     updateLastSeenAt: (sessionToken: string) => `/sessions/${sessionToken}/last-seen`,
-    validate: "/sessions/validate",
-    hostLogin: "/sessions/host-login",
+    validate: "/api/session/validate",
+    hostLogin: "/api/host/login",
   },
 } as const;

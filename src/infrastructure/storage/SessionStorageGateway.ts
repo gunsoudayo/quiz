@@ -13,6 +13,15 @@ const SESSION_KEYS = [
   "hostSessionToken",
   "hostSessionExpiresAt",
 ] as const;
+const PARTICIPANT_SESSION_KEYS = [
+  "roomId",
+  "participantId",
+  "participantName",
+  "role",
+  "sessionToken",
+  "sessionExpiresAt",
+] as const;
+const HOST_SESSION_KEYS = ["hostRoomId", "hostRole", "hostSessionToken", "hostSessionExpiresAt"] as const;
 
 export type StoredSession = ParticipantSessionDto | HostSessionDto;
 
@@ -81,5 +90,13 @@ export class SessionStorageGateway {
 
   clearSession(): void {
     this.storage.clear(SESSION_KEYS);
+  }
+
+  clearParticipantSession(): void {
+    this.storage.clear(PARTICIPANT_SESSION_KEYS);
+  }
+
+  clearHostSession(): void {
+    this.storage.clear(HOST_SESSION_KEYS);
   }
 }

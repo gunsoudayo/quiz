@@ -21,6 +21,11 @@ export class StartQuestionUseCase {
   ) {}
 
   async execute(input: StartQuestionInputDto): Promise<void> {
+    if (this.roomRepository.startQuestion) {
+      await this.roomRepository.startQuestion(input);
+      return;
+    }
+
     const session = await this.sessionRepository.findByToken(input.sessionToken);
 
     if (!session || session.isExpired() || !session.isHostSession()) {
