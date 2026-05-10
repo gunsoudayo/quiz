@@ -1,10 +1,10 @@
 import { GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { dynamoDb, requiredEnv, sessionItemToDto } from "./_dynamodb.mjs";
-import { emptyOptionsResponse, jsonResponse, parseJsonBody } from "./_http.mjs";
+import { BadRequestError, emptyOptionsResponse, jsonResponse, parseJsonBody } from "./_http.mjs";
 
 export async function handler(event) {
   if (event.requestContext?.http?.method === "OPTIONS" || event.httpMethod === "OPTIONS") {
-    return emptyOptionsResponse();
+    return emptyOptionsResponse(event);
   }
 
   try {
@@ -13,7 +13,7 @@ export async function handler(event) {
     const sessionToken = String(body.sessionToken ?? headerToken ?? "").trim();
 
     if (!sessionToken) {
-      return jsonResponse(200, { isValid: false });
+      return jsonResponse(200, { isValid: false }, event);
     }
 
     const sessionsTable = requiredEnv("SESSIONS_TABLE_NAME");
@@ -28,7 +28,7 @@ export async function handler(event) {
     const session = sessionItemToDto(result.Item);
 
     if (!session || new Date(session.expiresAt).getTime() <= Date.now()) {
-      return jsonResponse(200, { isValid: false });
+      return jsonResponse(200, { isValid: false }, event);
     }
 
     await dynamoDb.send(
@@ -44,16 +44,24 @@ export async function handler(event) {
       }),
     );
 
-    return jsonResponse(200, {
-      isValid: true,
-      roomId: session.roomId,
-      participantId: session.participantId,
-      participantName: session.participantName,
-      role: session.role,
-      expiresAt: session.expiresAt,
-    });
+    return jsonResponse(
+      200,
+      {
+        isValid: true,
+        roomId: session.roomId,
+        participantId: session.participantId,
+        participantName: session.participantName,
+        role: session.role,
+        expiresAt: session.expiresAt,
+      },
+      event,
+    );
   } catch (error) {
     console.error(error);
-    return jsonResponse(500, { message: "Failed to validate session." });
+    if (error instanceof BadRequestError) {
+      return jsonResponse(400, { message: error.message }, event);
+    }
+
+    return jsonResponse(500, { message: "Failed to validate session." }, event);
   }
 }

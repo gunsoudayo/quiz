@@ -6,6 +6,11 @@ export class LocalStorageService {
   }
 
   setItem(key: string, value: string): void {
+    if (value === undefined || value === null) {
+      this.removeItem(key);
+      return;
+    }
+
     this.getStorage()?.setItem(this.buildKey(key), value);
   }
 

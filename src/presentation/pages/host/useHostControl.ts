@@ -70,12 +70,12 @@ export function useHostControl(): {
 
     void (async (): Promise<void> => {
       try {
-        await startQuestionUseCase.execute({
+        const startedRoom = await startQuestionUseCase.execute({
           sessionToken: session.sessionToken,
           roomId: session.roomId,
           questionIndex,
         });
-        setLatestAction(`Q${questionIndex} を開始しました。`);
+        setLatestAction(`Q${startedRoom.currentQuestionIndex} を開始しました。`);
       } catch (error) {
         setLatestAction(error instanceof Error ? error.message : "問題開始に失敗しました。");
       }

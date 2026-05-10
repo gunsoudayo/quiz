@@ -21,7 +21,16 @@ const PARTICIPANT_SESSION_KEYS = [
   "sessionToken",
   "sessionExpiresAt",
 ] as const;
-const HOST_SESSION_KEYS = ["hostRoomId", "hostRole", "hostSessionToken", "hostSessionExpiresAt"] as const;
+const HOST_SESSION_KEYS = [
+  "roomId",
+  "role",
+  "sessionToken",
+  "sessionExpiresAt",
+  "hostRoomId",
+  "hostRole",
+  "hostSessionToken",
+  "hostSessionExpiresAt",
+] as const;
 
 export type StoredSession = ParticipantSessionDto | HostSessionDto;
 
@@ -38,10 +47,12 @@ export class SessionStorageGateway {
   }
 
   saveHostSession(session: HostSessionDto): void {
-    this.storage.setItem("hostRoomId", session.roomId);
-    this.storage.setItem("hostRole", session.role);
-    this.storage.setItem("hostSessionToken", session.sessionToken);
-    this.storage.setItem("hostSessionExpiresAt", session.sessionExpiresAt);
+    this.assertHostSession(session);
+    this.storage.clear(["hostRoomId", "hostRole", "hostSessionToken", "hostSessionExpiresAt"]);
+    this.storage.setItem("roomId", session.roomId);
+    this.storage.setItem("role", session.role);
+    this.storage.setItem("sessionToken", session.sessionToken);
+    this.storage.setItem("sessionExpiresAt", session.sessionExpiresAt);
   }
 
   getStoredSession(): StoredSession | null {
@@ -98,5 +109,11 @@ export class SessionStorageGateway {
 
   clearHostSession(): void {
     this.storage.clear(HOST_SESSION_KEYS);
+  }
+
+  private assertHostSession(session: HostSessionDto): void {
+    if (!session.roomId || session.role !== "host" || !session.sessionToken || !session.sessionExpiresAt) {
+      throw new Error("Host login response is missing session fields.");
+    }
   }
 }

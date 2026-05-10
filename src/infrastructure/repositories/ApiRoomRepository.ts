@@ -5,6 +5,7 @@ import type {
   ShowResultApiRequest,
   ShowResultApiResponse,
   StartQuestionApiRequest,
+  StartQuestionApiResponse,
 } from "../../shared/types/api";
 import { ApiClient } from "../api/ApiClient";
 import type { GetRoomResponseDto } from "../api/dto/ApiDtos";
@@ -40,8 +41,8 @@ export class ApiRoomRepository implements IRoomRepository {
     }
   }
 
-  async startQuestion(input: StartQuestionApiRequest): Promise<void> {
-    await this.apiClient.post<void>(ENDPOINTS.rooms.startQuestion, input);
+  async startQuestion(input: StartQuestionApiRequest): Promise<StartQuestionApiResponse> {
+    return await this.apiClient.post<StartQuestionApiResponse>(ENDPOINTS.rooms.startQuestion, input);
   }
 
   async showResult(input: ShowResultApiRequest): Promise<ShowResultApiResponse> {

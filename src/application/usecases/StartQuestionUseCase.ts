@@ -4,12 +4,15 @@ import type { IRoomRepository } from "../../domain/repositories/IRoomRepository"
 import type { ISessionRepository } from "../../domain/repositories/ISessionRepository";
 import type { ITallyRepository } from "../../domain/repositories/ITallyRepository";
 import { QuestionIndex } from "../../domain/valueObjects/QuestionIndex";
+import type { StartQuestionApiResponse } from "../../shared/types/api";
 
 export interface StartQuestionInputDto {
   readonly sessionToken: string;
   readonly roomId: string;
   readonly questionIndex: number;
 }
+
+export type StartQuestionOutputDto = StartQuestionApiResponse;
 
 export class StartQuestionUseCase {
   constructor(
@@ -20,10 +23,9 @@ export class StartQuestionUseCase {
     private readonly realtimeEventRepository: IRealtimeEventRepository,
   ) {}
 
-  async execute(input: StartQuestionInputDto): Promise<void> {
+  async execute(input: StartQuestionInputDto): Promise<StartQuestionOutputDto> {
     if (this.roomRepository.startQuestion) {
-      await this.roomRepository.startQuestion(input);
-      return;
+      return await this.roomRepository.startQuestion(input);
     }
 
     const session = await this.sessionRepository.findByToken(input.sessionToken);
@@ -48,5 +50,12 @@ export class StartQuestionUseCase {
     await this.tallyRepository.initialize(updatedRoom.roomId, questionIndex);
     await this.realtimeEventRepository.publishQuestionStarted(updatedRoom.roomId, questionIndex);
     await this.sessionRepository.updateLastSeenAt(session.sessionToken, new Date().toISOString());
+
+    return {
+      roomId: updatedRoom.roomId,
+      currentQuestionIndex: updatedRoom.currentQuestionIndex.value,
+      status: "open",
+      updatedAt: updatedRoom.updatedAt,
+    };
   }
 }
